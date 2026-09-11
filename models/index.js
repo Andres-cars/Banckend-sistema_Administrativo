@@ -1,0 +1,26 @@
+// src/models/index.js
+import { sequelize } from '../config/database.js';
+import Role from './role.model.js';
+import Usuario from './usuario.model.js';
+import Docente from './docente.model.js';
+import Curso from './curso.model.js'; 
+
+// Exportar todos los modelos
+export {
+  sequelize,
+  Role,
+  Usuario,
+  Docente,
+  Curso,
+};
+
+// Función para sincronizar la base de datos
+export const syncDatabase = async (force = false) => {
+  try {
+    await sequelize.sync({ alter: true, force });
+    console.log('✅ Base de datos sincronizada correctamente');
+  } catch (error) {
+    console.error('❌ Error al sincronizar la base de datos:', error);
+    throw error;
+  }
+};
