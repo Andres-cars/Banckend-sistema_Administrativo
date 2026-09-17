@@ -9,6 +9,8 @@ import { syncDatabase } from './models/index.js';
 import authRoutes from './router/auth.routes.js';
 import docenteRoutes from './router/docente.routes.js';
 import cursoRoutes from './router/curso.routes.js';
+import asignaturaRoutes from './router/asignatura.routes.js'
+
 // Cargar variables de entorno
 dotenv.config();
 
@@ -27,6 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // ============================================
 
 // Ruta raíz
+// Rutas
 app.get('/', (req, res) => {
   res.json({
     name: 'Sistema de Gestión Académica API',
@@ -37,6 +40,21 @@ app.get('/', (req, res) => {
       auth: {
         login: 'POST /api/auth/login',
         profile: 'GET /api/auth/profile',
+      },
+      docentes: {
+        getAll: 'GET /api/docentes',
+        create: 'POST /api/docentes',
+      },
+      cursos: {
+        getAll: 'GET /api/cursos',
+        create: 'POST /api/cursos',
+      },
+      asignaturas: {
+        getAll: 'GET /api/asignaturas',
+        getById: 'GET /api/asignaturas/:id',
+        create: 'POST /api/asignaturas',
+        update: 'PUT /api/asignaturas/:id',
+        delete: 'DELETE /api/asignaturas/:id',
       },
     },
   });
@@ -56,6 +74,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/docentes', docenteRoutes);
 app.use('/api/cursos', cursoRoutes);
+app.use('/api/asignaturas', asignaturaRoutes);
 // ============================================
 // MANEJO DE ERRORES GLOBAL
 // ============================================

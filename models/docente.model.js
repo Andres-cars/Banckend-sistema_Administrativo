@@ -35,7 +35,6 @@ Docente.init(
     identificacion: {
       type: DataTypes.STRING(20),
       allowNull: true,
-      unique: true,
       validate: {
         len: [0, 20],
       },
