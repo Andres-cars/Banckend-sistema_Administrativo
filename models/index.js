@@ -5,6 +5,8 @@ import Usuario from './usuario.model.js';
 import Docente from './docente.model.js';
 import Curso from './curso.model.js'; 
 import Asignatura from './asignatura.model.js';
+import Aula from './aula.model.js';
+import CargaHoraria from './cargaHoraria.model.js';
 
 // Exportar todos los modelos
 export {
@@ -14,6 +16,8 @@ export {
   Docente,
   Curso,
   Asignatura,
+  Aula,
+  CargaHoraria,
 };
 
 // Función para sincronizar la base de datos
