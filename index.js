@@ -12,6 +12,7 @@ import cursoRoutes from './router/curso.routes.js';
 import asignaturaRoutes from './router/asignatura.routes.js'
 import aulaRoutes from './router/aula.routes.js';
 import cargaHorariaRoutes from './router/cargaHoraria.routes.js'; 
+import horarioRoutes from './router/horario.routes.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -79,6 +80,7 @@ app.use('/api/cursos', cursoRoutes);
 app.use('/api/asignaturas', asignaturaRoutes);
 app.use('/api/aulas', aulaRoutes);
 app.use('/api/cargas-horarias', cargaHorariaRoutes);
+app.use('/api/horarios', horarioRoutes);
 // ============================================
 // MANEJO DE ERRORES GLOBAL
 // ============================================

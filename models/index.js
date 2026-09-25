@@ -7,6 +7,11 @@ import Curso from './curso.model.js';
 import Asignatura from './asignatura.model.js';
 import Aula from './aula.model.js';
 import CargaHoraria from './cargaHoraria.model.js';
+import PeriodoAcademico from './periodoAcademico.model.js';
+import Jornada from './jornada.model.js';
+import Disponibilidad from './disponibilidad.model.js';
+import Horario from './horario.model.js';
+import DetalleHorario from './detalleHorario.model.js';
 
 // Exportar todos los modelos
 export {
@@ -18,6 +23,11 @@ export {
   Asignatura,
   Aula,
   CargaHoraria,
+  PeriodoAcademico,
+  Jornada,
+  Disponibilidad,
+  Horario,
+  DetalleHorario,
 };
 
 // Función para sincronizar la base de datos
