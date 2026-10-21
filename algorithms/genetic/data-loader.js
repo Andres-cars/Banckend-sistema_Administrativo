@@ -1,17 +1,22 @@
-// src/algorithms/genetic/data-loader.js
+// algorithms/genetic/data-loader.js
 import CargaHoraria from '../../models/cargaHoraria.model.js';
 import Aula from '../../models/aula.model.js';
 import Disponibilidad from '../../models/disponibilidad.model.js';
-import Jornada from '../../models/jornada.model.js';
+import BloqueHorario from '../../models/bloqueHorario.model.js';
+import Curso from '../../models/curso.model.js';
+import Horario from '../../models/horario.model.js';
+import DetalleHorario from '../../models/detalleHorario.model.js';
 
-/**
- * Carga todos los datos necesarios para el algoritmo
- */
-export async function cargarDatos(periodoId = 1, jornadaId = 1) {
+export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) {
   
-  // 1. Cargar cargas horarias
+  // 1. Cargar cargas horarias (Si hay cursoId, filtramos solo ese curso)
+  const whereCarga = { periodo_id: periodoId, estado: true };
+  if (cursoId) {
+    whereCarga.curso_id = cursoId;
+  }
+
   const cargas = await CargaHoraria.findAll({
-    where: { periodo_id: periodoId, estado: true },
+    where: whereCarga,
     include: [
       { association: 'docente' },
       { association: 'asignatura' },
@@ -19,12 +24,38 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1) {
     ],
   });
 
-  // 2. Cargar aulas
-  const aulas = await Aula.findAll({
-    where: { estado: true },
+  if (cargas.length === 0) {
+    throw new Error('No hay cargas horarias registradas para este curso o período');
+  }
+
+  // 2. Determinar el tipo de educación del curso
+  let tipoEducacion = 'BASICA';
+  if (cursoId) {
+    const curso = await Curso.findByPk(cursoId);
+    tipoEducacion = curso?.tipo_educacion || 'BASICA';
+  } else {
+    tipoEducacion = cargas[0].curso?.tipo_educacion || 'BASICA';
+  }
+
+  // 3. Cargar los bloques horarios reales de la base de datos
+  const bloquesDB = await BloqueHorario.findAll({
+    where: { 
+      tipo_educacion: tipoEducacion,
+      tipo: 'CLASE',
+      estado: true,
+    },
+    order: [['orden', 'ASC']],
   });
 
-  // 3. Cargar disponibilidades
+  const bloques = bloquesDB.map(b => ({
+    inicio: b.hora_inicio.substring(0, 5),
+    fin: b.hora_fin.substring(0, 5),
+  }));
+
+  // 4. Cargar aulas
+  const aulas = await Aula.findAll({ where: { estado: true } });
+
+  // 5. Cargar disponibilidades docentes
   const disponibilidadesRaw = await Disponibilidad.findAll({
     where: { disponible: true },
   });
@@ -36,40 +67,46 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1) {
     horaFin: d.hora_fin,
   }));
 
-  // 4. Cargar jornada
-  const jornada = await Jornada.findByPk(jornadaId);
+  // =========================================================
+  // ✅ 6. NUEVO: Cargar horarios ocupados de OTROS cursos
+  // =========================================================
+  // Buscamos todos los horarios guardados de este período
+  const horariosGuardados = await Horario.findAll({
+    where: { periodo_id: periodoId, estado: true }
+  });
+
+  const horarioIds = horariosGuardados.map(h => h.id);
+
+  const clasesOcupadas = [];
+  if (horarioIds.length > 0) {
+    const detallesGuardados = await DetalleHorario.findAll({
+      where: { horario_id: horarioIds },
+      include: [{ association: 'carga_horaria' }]
+    });
+
+    for (const d of detallesGuardados) {
+      clasesOcupadas.push({
+        docenteId: d.carga_horaria.docente_id,
+        dia: d.dia_semana,
+        horaInicio: d.hora_inicio.substring(0, 5),
+        horaFin: d.hora_fin.substring(0, 5),
+      });
+    }
+  }
+
+  console.log(`📚 Cargas: ${cargas.length} | Bloques: ${bloques.length} | Tipo: ${tipoEducacion}`);
+  console.log(`🔒 Clases ya ocupadas en otros cursos: ${clasesOcupadas.length}`);
 
   return {
     cargas,
     aulas,
     disponibilidades,
-    jornada,
+    bloques,
+    tipoEducacion,
+    clasesOcupadas // ✅ Enviamos las clases ocupadas al algoritmo
   };
 }
 
-/**
- * Genera los bloques horarios según la jornada
- * Ej: Jornada 07:00 - 13:00 → bloques de 1 hora
- */
-export function generarBloquesHorarios(jornada, duracionBloque = 60) {
-  const bloques = [];
-  const [horaIni] = jornada.hora_inicio.split(':').map(Number);
-  const [horaFin] = jornada.hora_fin.split(':').map(Number);
-
-  let hora = horaIni;
-  while (hora + duracionBloque / 60 <= horaFin) {
-    const inicio = `${String(hora).padStart(2, '0')}:00`;
-    const fin = `${String(hora + duracionBloque / 60).padStart(2, '0')}:00`;
-    bloques.push({ inicio, fin });
-    hora += duracionBloque / 60;
-  }
-
-  return bloques;
-}
-
-/**
- * Genera los días de la semana
- */
 export function obtenerDias() {
   return ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
 }

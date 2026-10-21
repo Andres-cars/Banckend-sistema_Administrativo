@@ -1,9 +1,8 @@
-// src/models/curso.model.js
+// models/curso.model.js
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
 class Curso extends Model {
-  // Getter para nombre completo
   get nombreCompleto() {
     return `${this.nivel} ${this.grado} "${this.paralelo}"`;
   }
@@ -11,27 +10,15 @@ class Curso extends Model {
 
 Curso.init(
   {
-    id: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      autoIncrement: true,
-      primaryKey: true,
+    id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
+    nivel: { type: DataTypes.STRING(100), allowNull: false },
+    grado: { type: DataTypes.STRING(50), allowNull: false },
+    paralelo: { type: DataTypes.STRING(10), allowNull: false },
+    tipo_educacion: { 
+      type: DataTypes.ENUM('BASICA', 'BACHILLERATO'), 
+      defaultValue: 'BASICA' 
     },
-    nivel: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
-    grado: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
-    },
-    paralelo: {
-      type: DataTypes.STRING(10),
-      allowNull: false,
-    },
-    estado: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true,
-    },
+    estado: { type: DataTypes.BOOLEAN, defaultValue: true },
   },
   {
     sequelize,

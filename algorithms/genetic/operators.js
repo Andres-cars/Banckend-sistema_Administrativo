@@ -1,4 +1,4 @@
-// src/algorithms/genetic/operators.js
+// algorithms/genetic/operators.js
 import { Chromosome, ClaseAsignada } from './chromosome.js';
 
 /**
@@ -42,24 +42,25 @@ export function cruce(padre1, padre2, tasaCruce = 0.8) {
 
 /**
  * MUTACIÓN
- * Cambia aleatoriamente el día/hora/aula de algunas clases
+ * Cambia aleatoriamente el día/hora/aula de algunas clases.
+ * ✅ Cambiamos 'horas' por 'bloques' para que coincida con el nuevo genetic-algorithm.js
  */
-export function mutar(chromosome, tasaMutacion = 0.05, dias = [], horas = [], aulas = []) {
+export function mutar(chromosome, tasaMutacion = 0.05, dias = [], bloques = [], aulas = []) {
   const mutado = chromosome.clone();
 
   for (let i = 0; i < mutado.clases.length; i++) {
     if (Math.random() < tasaMutacion) {
       const clase = mutado.clases[i];
 
-      // Elegir qué mutar (día, hora o aula)
+      // Elegir qué mutar (día, bloque/hora o aula)
       const tipoMutacion = Math.floor(Math.random() * 3);
 
       if (tipoMutacion === 0 && dias.length > 0) {
         clase.dia = dias[Math.floor(Math.random() * dias.length)];
-      } else if (tipoMutacion === 1 && horas.length > 0) {
-        const hora = horas[Math.floor(Math.random() * horas.length)];
-        clase.horaInicio = hora.inicio;
-        clase.horaFin = hora.fin;
+      } else if (tipoMutacion === 1 && bloques.length > 0) {
+        const bloque = bloques[Math.floor(Math.random() * bloques.length)];
+        clase.horaInicio = bloque.inicio;
+        clase.horaFin = bloque.fin;
       } else if (tipoMutacion === 2 && aulas.length > 0) {
         clase.aulaId = aulas[Math.floor(Math.random() * aulas.length)];
       }

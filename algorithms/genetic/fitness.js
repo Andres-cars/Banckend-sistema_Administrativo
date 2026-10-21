@@ -1,73 +1,45 @@
-// src/algorithms/genetic/fitness.js
-
-/**
- * Función de aptitud (fitness)
- * Evalúa qué tan buena es una solución (horario)
- * 
- * Restricciones DURAS (penalización alta):
- *   - Un docente no puede estar en 2 clases al mismo tiempo
- *   - Un curso no puede tener 2 clases al mismo tiempo
- *   - Un aula no puede estar ocupada por 2 clases al mismo tiempo
- *   - El docente debe estar disponible
- * 
- * Restricciones BLANDAS (penalización baja):
- *   - Distribución equilibrada de clases
- *   - Evitar huecos
- */
-
+// algorithms/genetic/fitness.js
 const PENALIZACION_DURA = 100;
 const PENALIZACION_BLANDA = 10;
 
-export function calcularFitness(chromosome, disponibilidades = []) {
+export function calcularFitness(chromosome, disponibilidades = [], clasesOcupadas = []) {
   let penalizaciones = 0;
   let conflictos = 0;
 
   const clases = chromosome.clases;
 
-  // ============================================
-  // 1. CRUCE DE DOCENTES
-  // ============================================
   for (let i = 0; i < clases.length; i++) {
+    const a = clases[i];
+
+    // 1. Cruces dentro del mismo curso
     for (let j = i + 1; j < clases.length; j++) {
-      const a = clases[i];
       const b = clases[j];
 
-      // Solo verificar si están en el mismo día
       if (a.dia !== b.dia) continue;
 
-      // Verificar si se solapan en horario
       if (seSolapan(a.horaInicio, a.horaFin, b.horaInicio, b.horaFin)) {
+        if (a.docenteId === b.docenteId) { penalizaciones += PENALIZACION_DURA; conflictos++; }
+        if (a.cursoId === b.cursoId) { penalizaciones += PENALIZACION_DURA; conflictos++; }
+        if (a.aulaId === b.aulaId) { penalizaciones += PENALIZACION_DURA; conflictos++; }
+      }
+    }
 
-        // Cruce de docente
-        if (a.docenteId === b.docenteId) {
-          penalizaciones += PENALIZACION_DURA;
-          conflictos++;
-        }
-
-        // Cruce de curso
-        if (a.cursoId === b.cursoId) {
-          penalizaciones += PENALIZACION_DURA;
-          conflictos++;
-        }
-
-        // Cruce de aula
-        if (a.aulaId === b.aulaId) {
+    // 2. ✅ NUEVO: Cruce con OTROS cursos (Horarios ocupados)
+    for (const ocupada of clasesOcupadas) {
+      if (a.docenteId === ocupada.docenteId && a.dia === ocupada.dia) {
+        if (seSolapan(a.horaInicio, a.horaFin, ocupada.horaInicio, ocupada.horaFin)) {
           penalizaciones += PENALIZACION_DURA;
           conflictos++;
         }
       }
     }
-  }
 
-  // ============================================
-  // 2. DISPONIBILIDAD DOCENTE
-  // ============================================
-  for (const clase of clases) {
+    // 3. Disponibilidad docente
     const disponible = disponibilidades.some(d => 
-      d.docenteId === clase.docenteId &&
-      d.dia === clase.dia &&
-      horaEnRango(clase.horaInicio, d.horaInicio, d.horaFin) &&
-      horaEnRango(clase.horaFin, d.horaInicio, d.horaFin)
+      d.docenteId === a.docenteId &&
+      d.dia === a.dia &&
+      horaEnRango(a.horaInicio, d.horaInicio, d.horaFin) &&
+      horaEnRango(a.horaFin, d.horaInicio, d.horaFin)
     );
 
     if (!disponible && disponibilidades.length > 0) {
@@ -76,26 +48,19 @@ export function calcularFitness(chromosome, disponibilidades = []) {
     }
   }
 
-  // ============================================
-  // 3. DISTRIBUCIÓN EQUILIBRADA (blanda)
-  // ============================================
-  // Penalizar si un curso tiene demasiadas clases en un solo día
+  // 4. Distribución (Blanda)
   const clasesPorCursoDia = {};
   for (const clase of clases) {
     const key = `${clase.cursoId}-${clase.dia}`;
     clasesPorCursoDia[key] = (clasesPorCursoDia[key] || 0) + 1;
   }
-
   for (const key in clasesPorCursoDia) {
-    if (clasesPorCursoDia[key] > 6) {
+    if (clasesPorCursoDia[key] > 7) { // Máximo 7 clases al día
       penalizaciones += PENALIZACION_BLANDA;
     }
   }
 
-  // ============================================
-  // CALCULAR FITNESS
-  // ============================================
-  const totalClases = clases.length * 3; // 3 restricciones duras por par
+  const totalClases = clases.length * 3;
   const fitness = Math.max(0, 100 - (penalizaciones / Math.max(1, totalClases)) * 100);
 
   chromosome.fitness = Math.round(fitness * 100) / 100;
@@ -104,10 +69,6 @@ export function calcularFitness(chromosome, disponibilidades = []) {
 
   return chromosome.fitness;
 }
-
-// ============================================
-// UTILIDADES
-// ============================================
 
 function seSolapan(inicio1, fin1, inicio2, fin2) {
   const i1 = horaAMinutos(inicio1);

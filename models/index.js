@@ -12,7 +12,7 @@ import Jornada from './jornada.model.js';
 import Disponibilidad from './disponibilidad.model.js';
 import Horario from './horario.model.js';
 import DetalleHorario from './detalleHorario.model.js';
-
+import BloqueHorario from './bloqueHorario.model.js'
 // Exportar todos los modelos
 export {
   sequelize,
@@ -28,6 +28,7 @@ export {
   Disponibilidad,
   Horario,
   DetalleHorario,
+  BloqueHorario,
 };
 
 // Función para sincronizar la base de datos

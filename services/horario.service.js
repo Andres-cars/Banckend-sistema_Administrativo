@@ -12,18 +12,23 @@ import { sequelize } from '../config/database.js';
 class HorarioService {
 
   // 🧬 Generar horario con algoritmo genético
-  async generar(periodoId, jornadaId) {
+  async generar(periodoId, jornadaId, cursoId = null) {
     console.log('🧬 Generando horario...');
 
     const resultado = await generarHorario({
       periodoId,
       jornadaId,
+      cursoId, 
       tamañoPoblacion: 100,
       generaciones: 500,
       tasaCruce: 0.8,
       tasaMutacion: 0.05,
       fitnessMinimo: 95,
     });
+    // Si faltan clases, lanzar advertencia
+  if (!resultado.completo) {
+    console.warn(`⚠️ ATENCIÓN: Faltan ${resultado.clasesFaltantes} clases por asignar`);
+  }
 
     return resultado;
   }

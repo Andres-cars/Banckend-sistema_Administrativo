@@ -6,9 +6,9 @@ const horarioService = new HorarioService();
 // 🧬 Generar horario (sin guardar)
 export const generar = async (req, res) => {
   try {
-    const { periodoId = 1, jornadaId = 1 } = req.body;
+    const { periodoId = 1, jornadaId = 1, cursoId = null  } = req.body;
 
-    const resultado = await horarioService.generar(periodoId, jornadaId);
+    const resultado = await horarioService.generar(periodoId, jornadaId, cursoId);
 
     return res.json({
       success: true,
