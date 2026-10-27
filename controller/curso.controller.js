@@ -37,10 +37,13 @@ export const getById = async (req, res) => {
   }
 };
 
+// src/controllers/curso.controller.js
+
 // 📝 Crear curso
 export const create = async (req, res) => {
   try {
-    const { nivel, grado, paralelo } = req.body;
+    // ✅ Agregamos aula_id y tipo_educacion
+    const { nivel, grado, paralelo, tipo_educacion, aula_id } = req.body;
 
     if (!nivel || !grado || !paralelo) {
       return res.status(400).json({
@@ -49,7 +52,14 @@ export const create = async (req, res) => {
       });
     }
 
-    const curso = await cursoService.create({ nivel, grado, paralelo });
+    // ✅ Los enviamos al servicio
+    const curso = await cursoService.create({ 
+      nivel, 
+      grado, 
+      paralelo, 
+      tipo_educacion, 
+      aula_id 
+    });
 
     return res.status(201).json({
       success: true,
@@ -68,10 +78,15 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nivel, grado, paralelo } = req.body;
+    // ✅ Agregamos aula_id y tipo_educacion
+    const { nivel, grado, paralelo, tipo_educacion, aula_id } = req.body;
 
     const curso = await cursoService.update(Number(id), {
-      nivel, grado, paralelo,
+      nivel, 
+      grado, 
+      paralelo, 
+      tipo_educacion, 
+      aula_id // ✅ Lo enviamos al servicio
     });
 
     return res.json({

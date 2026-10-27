@@ -56,9 +56,13 @@ class AulaService {
   }
 
   // 🗑️ Eliminar (desactivar) aula
+    // 🗑️ Eliminar (desactivar) aula liberando el nombre
   async delete(id) {
     const aula = await this.getById(id);
-    await aula.update({ estado: false });
+    await aula.update({ 
+      estado: false,
+      nombre: `${aula.nombre}_DEL_${Date.now()}`
+    });
     return { message: 'Aula desactivada correctamente' };
   }
 

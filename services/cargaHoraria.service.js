@@ -69,6 +69,7 @@ class CargaHorariaService {
   }
 
   // 🗑️ Eliminar (desactivar) carga horaria
+    // 🗑️ Eliminar (desactivar) carga horaria
   async delete(id) {
     const carga = await this.getById(id);
     await carga.update({ estado: false });

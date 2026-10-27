@@ -113,6 +113,7 @@ class HorarioService {
   }
 
   // 🗑️ Eliminar horario
+    // 🗑️ Eliminar horario
   async delete(id) {
     const horario = await Horario.findByPk(id);
     if (!horario) {

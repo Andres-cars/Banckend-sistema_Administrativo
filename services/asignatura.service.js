@@ -27,6 +27,7 @@ class AsignaturaService {
     // Verificar si ya existe por nombre
     const existingNombre = await Asignatura.findOne({ where: { nombre } });
     if (existingNombre) {
+      
       throw new Error('Ya existe una asignatura con este nombre');
     }
 
@@ -71,9 +72,14 @@ class AsignaturaService {
   }
 
   // 🗑️ Eliminar (desactivar) asignatura
+   // 🗑️ Eliminar (desactivar) asignatura liberando el nombre y código
   async delete(id) {
     const asignatura = await this.getById(id);
-    await asignatura.update({ estado: false });
+    await asignatura.update({ 
+      estado: false,
+      nombre: `${asignatura.nombre}_DEL_${Date.now()}`,
+      codigo: asignatura.codigo ? `${asignatura.codigo}_DEL_${Date.now()}` : null
+    });
     return { message: 'Asignatura desactivada correctamente' };
   }
 

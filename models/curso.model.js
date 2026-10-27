@@ -1,6 +1,7 @@
 // models/curso.model.js
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
+import Aula from './aula.model.js';
 
 class Curso extends Model {
   get nombreCompleto() {
@@ -18,6 +19,10 @@ Curso.init(
       type: DataTypes.ENUM('BASICA', 'BACHILLERATO'), 
       defaultValue: 'BASICA' 
     },
+    aula_id: { // ✅ NUEVO CAMPO
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
     estado: { type: DataTypes.BOOLEAN, defaultValue: true },
   },
   {
@@ -28,5 +33,5 @@ Curso.init(
     updatedAt: 'updated_at',
   }
 );
-
+Curso.belongsTo(Aula, { foreignKey: 'aula_id', as: 'aula' });
 export default Curso;

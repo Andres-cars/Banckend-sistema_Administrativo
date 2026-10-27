@@ -125,7 +125,7 @@ function generarIndividuoAleatorio(cargas, dias, bloques, aulaIds) {
       const { dia, bloque } = espaciosDisponibles[espacioIndex];
       espacioIndex++;
 
-      const aulaId = aulaIds.length > 0 ? aulaIds[Math.floor(Math.random() * aulaIds.length)] : null;
+      const aulaId = carga.curso?.aula_id || (aulaIds.length > 0 ? aulaIds[0] : null);
 
       clases.push(new ClaseAsignada(
         carga.id,

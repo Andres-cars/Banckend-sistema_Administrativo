@@ -65,10 +65,24 @@ class DocenteService {
     return docente;
   }
 
+    // 🗑️ Eliminar (desactivar) docente liberando identificación y usuario
   async delete(id) {
     const docente = await this.getById(id);
-    if (docente.usuario) await docente.usuario.update({ estado: false });
-    await docente.update({ estado: false });
+    
+    // 1. Desactivar el usuario y liberar su nombre de usuario
+    if (docente.usuario) {
+      await docente.usuario.update({ 
+        estado: false,
+        usuario: `${docente.usuario.usuario}_DEL_${Date.now()}`
+      });
+    }
+    
+    // 2. Desactivar al docente y liberar su cédula
+    await docente.update({ 
+      estado: false,
+      identificacion: docente.identificacion ? `${docente.identificacion}_DEL_${Date.now()}` : null
+    });
+    
     return { message: 'Docente y usuario desactivados correctamente' };
   }
 
