@@ -16,7 +16,7 @@ Curso.init(
     grado: { type: DataTypes.STRING(50), allowNull: false },
     paralelo: { type: DataTypes.STRING(10), allowNull: false },
     tipo_educacion: { 
-      type: DataTypes.ENUM('BASICA', 'BACHILLERATO'), 
+      type: DataTypes.ENUM('BASICA', 'BACHILLERATO', 'ESCUELA'), // ESCUELA: Inicial a 7mo 
       defaultValue: 'BASICA' 
     },
     aula_id: { // ✅ NUEVO CAMPO

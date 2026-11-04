@@ -2,6 +2,20 @@
 import Curso from '../models/curso.model.js';
 import Aula from '../models/aula.model.js'; 
 
+/**
+ * Tipo de educación según el grado (define qué bloques horarios usa el curso):
+ *  - BGU / Bachillerato        → BACHILLERATO (07:30–13:05, recreo 10:30–10:50)
+ *  - 8vo, 9no, 10mo            → BASICA       (07:30–13:05, recreo 10:30–10:50)
+ *  - Inicial, 1ro a 7mo        → ESCUELA      (07:30–12:00, recreo 10:00–10:30)
+ */
+export function tipoEducacionDe(nivel = '', grado = '') {
+  const texto = `${nivel} ${grado}`.toUpperCase();
+  if (texto.includes('BGU') || texto.includes('BACHILLERATO')) return 'BACHILLERATO';
+  const numero = parseInt(String(grado).trim(), 10);
+  if ([8, 9, 10].includes(numero)) return 'BASICA';
+  return 'ESCUELA';
+}
+
 class CursoService {
   
   // 📋 Listar todos los cursos
@@ -26,7 +40,7 @@ class CursoService {
 
   // 📝 Crear un nuevo curso
   async create(data) {
-    const { nivel, grado, paralelo, aula_id  } = data;
+    const { nivel, grado, paralelo, tipo_educacion, aula_id } = data;
 
     // Verificar si ya existe
     const existing = await Curso.findOne({ 
@@ -40,7 +54,7 @@ class CursoService {
       nivel,
       grado,
       paralelo,
-      tipo_educacion, // ✅ Guardamos el tipo
+      tipo_educacion: tipo_educacion || tipoEducacionDe(nivel, grado), // si el formulario no lo envía, se deduce del grado
       aula_id, 
       estado: true,
     });
@@ -69,6 +83,12 @@ class CursoService {
         throw new Error('Ya existe un curso con estos datos');
       }
     }
+
+    // Si cambia el nivel o el grado y no se envía el tipo, se recalcula
+    if (!data.tipo_educacion && (data.nivel || data.grado)) {
+      data.tipo_educacion = tipoEducacionDe(data.nivel || curso.nivel, data.grado || curso.grado);
+    }
+    if (!data.tipo_educacion) delete data.tipo_educacion;
 
     await curso.update(data);
     return curso;

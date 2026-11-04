@@ -7,7 +7,7 @@ class BloqueHorario extends Model {}
 BloqueHorario.init(
   {
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    tipo_educacion: { type: DataTypes.ENUM('BASICA', 'BACHILLERATO'), allowNull: false },
+    tipo_educacion: { type: DataTypes.ENUM('BASICA', 'BACHILLERATO', 'ESCUELA'), allowNull: false },
     orden: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     hora_inicio: { type: DataTypes.TIME, allowNull: false },
     hora_fin: { type: DataTypes.TIME, allowNull: false },

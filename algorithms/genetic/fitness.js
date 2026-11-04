@@ -11,7 +11,7 @@ export function calcularFitness(chromosome, disponibilidades = [], clasesOcupada
   for (let i = 0; i < clases.length; i++) {
     const a = clases[i];
 
-    // 1. Cruces dentro del mismo curso
+    // 1. Cruces dentro del mismo curso (las aulas no son restricción: cada curso tiene aula fija)
     for (let j = i + 1; j < clases.length; j++) {
       const b = clases[j];
 
@@ -20,7 +20,6 @@ export function calcularFitness(chromosome, disponibilidades = [], clasesOcupada
       if (seSolapan(a.horaInicio, a.horaFin, b.horaInicio, b.horaFin)) {
         if (a.docenteId === b.docenteId) { penalizaciones += PENALIZACION_DURA; conflictos++; }
         if (a.cursoId === b.cursoId) { penalizaciones += PENALIZACION_DURA; conflictos++; }
-        if (a.aulaId === b.aulaId) { penalizaciones += PENALIZACION_DURA; conflictos++; }
       }
     }
 
@@ -60,8 +59,9 @@ export function calcularFitness(chromosome, disponibilidades = [], clasesOcupada
     }
   }
 
-  const totalClases = clases.length * 3;
-  const fitness = Math.max(0, 100 - (penalizaciones / Math.max(1, totalClases)) * 100);
+  const totalClases = clases.length * 2;
+  // Cada conflicto baja el fitness de forma gradual: 0 → 100; 1 duro → 50; 2 → 33,3; 1 blando → 90,9
+  const fitness = 100 / (1 + penalizaciones / PENALIZACION_DURA);
 
   chromosome.fitness = Math.round(fitness * 100) / 100;
   chromosome.conflictos = conflictos;

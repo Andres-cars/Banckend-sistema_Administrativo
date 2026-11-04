@@ -85,6 +85,8 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) 
     });
 
     for (const d of detallesGuardados) {
+      // El horario anterior del mismo curso no ocupa a sus docentes: se va a reemplazar
+      if (cursoId && d.carga_horaria.curso_id === Number(cursoId)) continue;
       clasesOcupadas.push({
         docenteId: d.carga_horaria.docente_id,
         dia: d.dia_semana,
