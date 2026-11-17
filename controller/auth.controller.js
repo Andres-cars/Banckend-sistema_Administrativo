@@ -64,3 +64,21 @@ export const logout = async (req, res) => {
     message: 'Sesión cerrada correctamente',
   });
 };
+
+// 🔒 Cambiar mi contraseña
+export const cambiarPassword = async (req, res) => {
+  try {
+    const { passwordActual, passwordNueva } = req.body;
+    await authService.cambiarPassword(req.user.id, passwordActual, passwordNueva);
+
+    return res.json({
+      success: true,
+      message: 'Contraseña actualizada correctamente',
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Error al cambiar la contraseña',
+    });
+  }
+};

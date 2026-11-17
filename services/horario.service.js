@@ -7,6 +7,9 @@ import Docente from '../models/docente.model.js';
 import Asignatura from '../models/asignatura.model.js';
 import Curso from '../models/curso.model.js';
 import Aula from '../models/aula.model.js';
+import Usuario from '../models/usuario.model.js';
+import PeriodoAcademico from '../models/periodoAcademico.model.js';
+import Jornada from '../models/jornada.model.js';
 import { sequelize } from '../config/database.js';
 
 class HorarioService {
@@ -74,6 +77,10 @@ class HorarioService {
   async getAll() {
     return await Horario.findAll({
       where: { estado: true },
+      include: [
+        { model: PeriodoAcademico, as: 'periodo', attributes: ['id', 'nombre'] },
+        { model: Jornada, as: 'jornada', attributes: ['id', 'nombre'] },
+      ],
       order: [['id', 'DESC']],
     });
   }
@@ -82,7 +89,9 @@ class HorarioService {
   async getById(id) {
     const horario = await Horario.findByPk(id, {
       include: [
-        {
+               { model: PeriodoAcademico, as: 'periodo', attributes: ['id', 'nombre'] },
+        { model: Jornada, as: 'jornada', attributes: ['id', 'nombre', 'hora_inicio', 'hora_fin'] },
+         {
           model: DetalleHorario,
           as: 'detalles',
           include: [
@@ -112,6 +121,93 @@ class HorarioService {
     return horario;
   }
 
+    // 👨‍🏫 MIS CLASES: horario y carga del docente que inició sesión
+  async getMisClases(usuarioId) {
+    // 1. Saber qué docente es el usuario del token
+    const usuario = await Usuario.findByPk(usuarioId, {
+      include: [{ model: Docente, as: 'docente', attributes: ['id', 'nombres', 'apellidos', 'especialidad'] }],
+    });
+
+    if (!usuario || !usuario.docente) {
+      throw new Error('Este usuario no está vinculado a ningún docente');
+    }
+
+    const docente = usuario.docente;
+
+    // 2. Su carga horaria
+    const cargas = await CargaHoraria.findAll({
+      where: { docente_id: docente.id, estado: true },
+      include: [
+        { model: Asignatura, as: 'asignatura', attributes: ['id', 'nombre', 'codigo'] },
+        { model: Curso, as: 'curso', attributes: ['id', 'nivel', 'grado', 'paralelo'] },
+      ],
+      order: [['id', 'ASC']],
+    });
+
+    const cargaPorId = new Map(cargas.map(c => [c.id, c]));
+    let clases = [];
+
+    if (cargas.length > 0) {
+      // 3. Sus clases en los horarios guardados (solo horarios activos)
+      const detalles = await DetalleHorario.findAll({
+        where: { carga_horaria_id: [...cargaPorId.keys()] },
+        include: [
+          { model: Horario, as: 'horario', where: { estado: true }, attributes: ['id', 'nombre'] },
+          { model: Aula, as: 'aula', attributes: ['id', 'nombre'] },
+        ],
+        order: [['horario_id', 'DESC']],
+      });
+
+      // 4. Si un curso tiene varios horarios guardados, usar solo el más reciente
+      const horarioVigentePorCurso = new Map();
+      for (const d of detalles) {
+        const cursoId = cargaPorId.get(d.carga_horaria_id).curso_id;
+        if (!horarioVigentePorCurso.has(cursoId)) {
+          horarioVigentePorCurso.set(cursoId, d.horario_id);
+        }
+      }
+
+      const ordenDias = { LUNES: 1, MARTES: 2, MIERCOLES: 3, JUEVES: 4, VIERNES: 5, SABADO: 6 };
+
+      clases = detalles
+        .filter(d => horarioVigentePorCurso.get(cargaPorId.get(d.carga_horaria_id).curso_id) === d.horario_id)
+        .map(d => {
+          const carga = cargaPorId.get(d.carga_horaria_id);
+          return {
+            id: d.id,
+            dia: d.dia_semana,
+            hora_inicio: String(d.hora_inicio).slice(0, 5),
+            hora_fin: String(d.hora_fin).slice(0, 5),
+            asignatura: carga.asignatura?.nombre || '',
+            curso: `${carga.curso?.grado || ''} "${carga.curso?.paralelo || ''}"`,
+            nivel: carga.curso?.nivel || '',
+            aula: d.aula?.nombre || '',
+            horario: d.horario?.nombre || '',
+          };
+        })
+        .sort((a, b) => (ordenDias[a.dia] - ordenDias[b.dia]) || a.hora_inicio.localeCompare(b.hora_inicio));
+    }
+
+    // 5. Respuesta
+    return {
+      docente: {
+        id: docente.id,
+        nombres: docente.nombres,
+        apellidos: docente.apellidos,
+        especialidad: docente.especialidad,
+      },
+      cargas: cargas.map(c => ({
+        id: c.id,
+        asignatura: c.asignatura?.nombre || '',
+        codigo: c.asignatura?.codigo || '',
+        curso: `${c.curso?.grado || ''} "${c.curso?.paralelo || ''}"`,
+        nivel: c.curso?.nivel || '',
+        horas_semanales: c.horas_semanales,
+      })),
+      totalHoras: cargas.reduce((suma, c) => suma + Number(c.horas_semanales || 0), 0),
+      clases,
+    };
+  }
   // 🗑️ Eliminar horario
     // 🗑️ Eliminar horario
   async delete(id) {

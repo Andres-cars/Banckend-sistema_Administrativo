@@ -86,6 +86,44 @@ class DocenteService {
     return { message: 'Docente y usuario desactivados correctamente' };
   }
 
+    // 🔑 Restablecer (o asignar) la contraseña de un docente — solo ADMIN
+  async resetPassword(id, { password, usuario }) {
+    if (!password || password.length < 6) {
+      throw new Error('La contraseña debe tener al menos 6 caracteres');
+    }
+
+    const docente = await this.getById(id);
+
+    // a) Ya tiene usuario: solo se cambia la contraseña
+    if (docente.usuario) {
+      const user = await Usuario.findByPk(docente.usuario.id);
+      await user.update({ password }); // el hook del modelo la cifra
+      return { usuario: user.usuario, creado: false };
+    }
+
+    // b) No tiene usuario: se le crea su acceso
+    const nombreUsuario = (usuario || '').trim();
+    if (!nombreUsuario) {
+      throw new Error('Este docente no tiene usuario. Escribe un nombre de usuario para crearle el acceso.');
+    }
+
+    const existe = await Usuario.findOne({ where: { usuario: nombreUsuario } });
+    if (existe) throw new Error('El nombre de usuario ya existe');
+
+    const rolDocente = await Role.findOne({ where: { nombre: 'DOCENTE' } });
+    if (!rolDocente) throw new Error('No se encontró el rol DOCENTE');
+
+    await Usuario.create({
+      usuario: nombreUsuario,
+      password,
+      rol_id: rolDocente.id,
+      docente_id: docente.id,
+      estado: true,
+    });
+
+    return { usuario: nombreUsuario, creado: true };
+  }
+
   async search(termino) {
     const { Op } = await import('sequelize');
     return await Docente.findAll({

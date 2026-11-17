@@ -142,3 +142,25 @@ export const search = async (req, res) => {
     });
   }
 };
+
+
+// 🔑 Restablecer contraseña de un docente (solo ADMIN)
+export const resetPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password, usuario } = req.body;
+
+    const result = await docenteService.resetPassword(Number(id), { password, usuario });
+
+    return res.json({
+      success: true,
+      message: result.creado ? 'Acceso creado correctamente' : 'Contraseña restablecida correctamente',
+      data: result,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Error al restablecer la contraseña',
+    });
+  }
+};

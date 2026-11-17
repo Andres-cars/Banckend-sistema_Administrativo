@@ -100,3 +100,20 @@ export const deleteHorario = async (req, res) => {
     });
   }
 };
+
+
+// 👨‍🏫 Mis clases (solo DOCENTE): su horario y su carga horaria
+export const misClases = async (req, res) => {
+  try {
+    const resultado = await horarioService.getMisClases(req.user.id);
+    return res.json({
+      success: true,
+      data: resultado,
+    });
+  } catch (error) {
+    return res.status(404).json({
+      success: false,
+      message: error.message || 'No se pudo obtener tu horario',
+    });
+  }
+};

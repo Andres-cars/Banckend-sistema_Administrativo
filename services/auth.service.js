@@ -60,6 +60,28 @@ class AuthService {
 
     return user;
   }
+
+    // 🔒 Cambiar mi propia contraseña (cualquier usuario autenticado)
+  async cambiarPassword(userId, passwordActual, passwordNueva) {
+    if (!passwordActual || !passwordNueva) {
+      throw new Error('Debes escribir tu contraseña actual y la nueva');
+    }
+    if (passwordNueva.length < 6) {
+      throw new Error('La nueva contraseña debe tener al menos 6 caracteres');
+    }
+    if (passwordActual === passwordNueva) {
+      throw new Error('La nueva contraseña debe ser diferente a la actual');
+    }
+
+    const user = await Usuario.findByPk(userId);
+    if (!user) throw new Error('Usuario no encontrado');
+
+    const correcta = await user.comparePassword(passwordActual);
+    if (!correcta) throw new Error('La contraseña actual es incorrecta');
+
+    await user.update({ password: passwordNueva }); // el hook del modelo la cifra
+    return true;
+  }
 }
 
 export default AuthService;
