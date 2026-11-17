@@ -123,7 +123,6 @@ class HorarioService {
 
     // 👨‍🏫 MIS CLASES: horario y carga del docente que inició sesión
   async getMisClases(usuarioId) {
-    // 1. Saber qué docente es el usuario del token
     const usuario = await Usuario.findByPk(usuarioId, {
       include: [{ model: Docente, as: 'docente', attributes: ['id', 'nombres', 'apellidos', 'especialidad'] }],
     });
@@ -132,7 +131,18 @@ class HorarioService {
       throw new Error('Este usuario no está vinculado a ningún docente');
     }
 
-    const docente = usuario.docente;
+    return this.getClasesDocente(usuario.docente);
+  }
+
+  // 👨‍🏫 CLASES DE UN DOCENTE (lo usan el docente y el administrador)
+  async getClasesDocente(docenteOId) {
+    const docente = typeof docenteOId === 'object'
+      ? docenteOId
+      : await Docente.findByPk(docenteOId, { attributes: ['id', 'nombres', 'apellidos', 'especialidad'] });
+
+    if (!docente) {
+      throw new Error('Docente no encontrado');
+    }
 
     // 2. Su carga horaria
     const cargas = await CargaHoraria.findAll({
@@ -148,11 +158,11 @@ class HorarioService {
     let clases = [];
 
     if (cargas.length > 0) {
-      // 3. Sus clases en los horarios guardados (solo horarios activos)
+      // 3. Sus clases en los horarios guardados (solo activos y PUBLICADOS - HU-13)
       const detalles = await DetalleHorario.findAll({
         where: { carga_horaria_id: [...cargaPorId.keys()] },
         include: [
-          { model: Horario, as: 'horario', where: { estado: true }, attributes: ['id', 'nombre'] },
+          { model: Horario, as: 'horario', where: { estado: true, publicado: true }, attributes: ['id', 'nombre'] },
           { model: Aula, as: 'aula', attributes: ['id', 'nombre'] },
         ],
         order: [['horario_id', 'DESC']],
@@ -208,8 +218,66 @@ class HorarioService {
       clases,
     };
   }
+
+  // 📢 HU-13: Publicar / retirar un horario
+  // Al publicar, se retira el que estaba publicado antes para el mismo curso
+  // (así siempre hay una sola versión oficial por curso).
+  async cambiarPublicacion(id, publicado) {
+    const horario = await Horario.findByPk(id);
+    if (!horario || !horario.estado) {
+      throw new Error('Horario no encontrado');
+    }
+
+    const transaccion = await sequelize.transaction();
+    try {
+      let retirados = [];
+
+      if (publicado) {
+        // Cursos que tiene este horario
+        const detalles = await DetalleHorario.findAll({
+          where: { horario_id: id },
+          include: [{ model: CargaHoraria, as: 'carga_horaria', attributes: ['curso_id'] }],
+          transaction: transaccion,
+        });
+        const cursoIds = [...new Set(detalles.map(d => d.carga_horaria?.curso_id).filter(Boolean))];
+
+        if (cursoIds.length) {
+          // Otros horarios publicados de esos mismos cursos
+          const otros = await DetalleHorario.findAll({
+            attributes: ['horario_id'],
+            include: [
+              { model: CargaHoraria, as: 'carga_horaria', attributes: [], where: { curso_id: cursoIds } },
+              { model: Horario, as: 'horario', attributes: ['id', 'nombre'], where: { estado: true, publicado: true } },
+            ],
+            transaction: transaccion,
+          });
+          const idsOtros = [...new Set(otros.map(o => o.horario_id))].filter(x => x !== id);
+
+          if (idsOtros.length) {
+            await Horario.update(
+              { publicado: false, fecha_publicacion: null },
+              { where: { id: idsOtros }, transaction: transaccion }
+            );
+            retirados = [...new Map(otros.filter(o => idsOtros.includes(o.horario_id))
+              .map(o => [o.horario_id, o.horario?.nombre])).values()];
+          }
+        }
+      }
+
+      await horario.update(
+        { publicado, fecha_publicacion: publicado ? new Date() : null },
+        { transaction: transaccion }
+      );
+
+      await transaccion.commit();
+      return { id: horario.id, nombre: horario.nombre, publicado, retirados };
+    } catch (error) {
+      await transaccion.rollback();
+      throw error;
+    }
+  }
+
   // 🗑️ Eliminar horario
-    // 🗑️ Eliminar horario
   async delete(id) {
     const horario = await Horario.findByPk(id);
     if (!horario) {

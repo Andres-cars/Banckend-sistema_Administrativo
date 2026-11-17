@@ -6,7 +6,8 @@ const asignaturaService = new AsignaturaService();
 // 📋 Listar asignaturas
 export const getAll = async (req, res) => {
   try {
-    const asignaturas = await asignaturaService.getAll();
+       const incluirInactivas = req.query.todas === 'true'; // ✅ ?todas=true
+    const asignaturas = await asignaturaService.getAll(incluirInactivas);
     return res.json({
       success: true,
       data: asignaturas,
@@ -127,6 +128,32 @@ export const search = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Error al buscar asignaturas',
+    });
+  }
+};
+
+
+// 🔄 Activar / desactivar asignatura
+export const cambiarEstado = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    if (typeof estado !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'El estado debe ser true o false' });
+    }
+
+    const asignatura = await asignaturaService.cambiarEstado(Number(id), estado);
+
+    return res.json({
+      success: true,
+      message: estado ? 'Asignatura activada correctamente' : 'Asignatura desactivada correctamente',
+      data: asignatura,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Error al cambiar el estado de la asignatura',
     });
   }
 };

@@ -117,3 +117,49 @@ export const misClases = async (req, res) => {
     });
   }
 };
+
+// 👨‍🏫 Horario de un docente (solo ADMIN)
+export const clasesDocente = async (req, res) => {
+  try {
+    const resultado = await horarioService.getClasesDocente(Number(req.params.docenteId));
+    return res.json({
+      success: true,
+      data: resultado,
+    });
+  } catch (error) {
+    return res.status(404).json({
+      success: false,
+      message: error.message || 'No se pudo obtener el horario del docente',
+    });
+  }
+};
+
+// 📢 HU-13: Publicar o retirar un horario (solo ADMIN)
+export const cambiarPublicacion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { publicado } = req.body;
+
+    if (typeof publicado !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: 'El campo "publicado" debe ser true o false',
+      });
+    }
+
+    const resultado = await horarioService.cambiarPublicacion(Number(id), publicado);
+
+    return res.json({
+      success: true,
+      message: publicado
+        ? 'Horario publicado: los docentes ya pueden verlo'
+        : 'Horario retirado: vuelve a ser borrador',
+      data: resultado,
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Error al cambiar la publicación',
+    });
+  }
+};

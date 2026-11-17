@@ -33,6 +33,15 @@ Horario.init(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+    // ✅ HU-13: solo los horarios publicados los ven los docentes
+    publicado: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    fecha_publicacion: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     sequelize,

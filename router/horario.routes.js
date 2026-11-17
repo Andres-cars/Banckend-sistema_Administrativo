@@ -7,6 +7,8 @@ import {
   getById,
   deleteHorario,
   misClases,
+  clasesDocente,
+  cambiarPublicacion,
 } from '../controller/horario.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import { isAdmin, isDocente } from '../middlewares/role.middleware.js';
@@ -22,7 +24,9 @@ router.get('/mis-clases', isDocente, misClases);
 router.post('/generar', isAdmin, generar);
 router.post('/guardar', isAdmin, guardar);
 router.get('/', isAdmin, getAll);
+router.get('/docente/:docenteId', isAdmin, clasesDocente); // ✅ (antes de '/:id')
 router.get('/:id', isAdmin, getById);
+router.patch('/:id/publicar', isAdmin, cambiarPublicacion); // ✅ HU-13
 router.delete('/:id', isAdmin, deleteHorario);
 
 export default router;

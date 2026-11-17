@@ -96,9 +96,9 @@ export function reparar(chromosome, disponibilidades = [], clasesOcupadas = [], 
     [a.horaInicio, b.horaInicio] = [b.horaInicio, a.horaInicio];
     [a.horaFin, b.horaFin] = [b.horaFin, a.horaFin];
   };
-  for (let pasada = 0; pasada < maxPasadas && c.conflictos > 0; pasada++) {
+  for (let pasada = 0; pasada < maxPasadas && c.fitness < 100; pasada++) {
     let mejora = false;
-    for (let i = 0; i < c.clases.length && c.conflictos > 0; i++) {
+    for (let i = 0; i < c.clases.length && c.fitness < 100; i++) {
       let mejorJ = -1, mejorFit = c.fitness;
       for (let j = 0; j < c.clases.length; j++) {
         if (i === j) continue;

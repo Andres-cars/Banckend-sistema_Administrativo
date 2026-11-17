@@ -7,6 +7,11 @@ import Curso from '../../models/curso.model.js';
 import Horario from '../../models/horario.model.js';
 import DetalleHorario from '../../models/detalleHorario.model.js';
 
+// ✅ RB-03: la escuela (Inicial a 7mo) y el colegio (8vo a 3ro BGU) son secciones distintas
+export function seccionDe(tipoEducacion) {
+  return tipoEducacion === 'ESCUELA' ? 'ESCUELA' : 'COLEGIO';
+}
+
 export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) {
   
   // 1. Cargar cargas horarias (Si hay cursoId, filtramos solo ese curso)
@@ -19,7 +24,7 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) 
     where: whereCarga,
     include: [
       { association: 'docente' },
-      { association: 'asignatura' },
+      ({ association: 'asignatura', where: { estado: true } }),
       { association: 'curso' },
     ],
   });
@@ -68,9 +73,8 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) 
   }));
 
   // =========================================================
-  // ✅ 6. NUEVO: Cargar horarios ocupados de OTROS cursos
+  // 6. Cargar horarios ocupados de OTROS cursos
   // =========================================================
-  // Buscamos todos los horarios guardados de este período
   const horariosGuardados = await Horario.findAll({
     where: { periodo_id: periodoId, estado: true }
   });
@@ -81,17 +85,29 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) 
   if (horarioIds.length > 0) {
     const detallesGuardados = await DetalleHorario.findAll({
       where: { horario_id: horarioIds },
-      include: [{ association: 'carga_horaria' }]
+      include: [{ association: 'carga_horaria', include: [{ association: 'curso' }] }] // ✅ curso para saber su sección
     });
+
+    const nombreHorario = new Map(horariosGuardados.map(h => [h.id, h.nombre]));
 
     for (const d of detallesGuardados) {
       // El horario anterior del mismo curso no ocupa a sus docentes: se va a reemplazar
       if (cursoId && d.carga_horaria.curso_id === Number(cursoId)) continue;
+      const cursoOcupado = d.carga_horaria.curso;
+      const seccionOcupada = seccionDe(cursoOcupado?.tipo_educacion);
+
       clasesOcupadas.push({
         docenteId: d.carga_horaria.docente_id,
         dia: d.dia_semana,
         horaInicio: d.hora_inicio.substring(0, 5),
         horaFin: d.hora_fin.substring(0, 5),
+        // ✅ RB-03: datos para el aviso y la prioridad
+        seccion: seccionOcupada,
+        curso: cursoOcupado ? `${cursoOcupado.grado} "${cursoOcupado.paralelo}"` : '',
+        horario: nombreHorario.get(d.horario_id) || '',
+        // Si se genera un curso del COLEGIO y esta clase es de la ESCUELA,
+        // el colegio tiene prioridad: el cruce no bloquea, solo se avisa.
+        cruceBlando: seccionDe(tipoEducacion) === 'COLEGIO' && seccionOcupada === 'ESCUELA',
       });
     }
   }
@@ -105,7 +121,8 @@ export async function cargarDatos(periodoId = 1, jornadaId = 1, cursoId = null) 
     disponibilidades,
     bloques,
     tipoEducacion,
-    clasesOcupadas // ✅ Enviamos las clases ocupadas al algoritmo
+    seccion: seccionDe(tipoEducacion), // ✅ RB-03
+    clasesOcupadas
   };
 }
 

@@ -1,6 +1,6 @@
 // algorithms/genetic/genetic-algorithm.js
 import { Chromosome, ClaseAsignada } from './chromosome.js';
-import { calcularFitness } from './fitness.js';
+import { calcularFitness, detectarCrucesEntreSecciones  } from './fitness.js';
 import { seleccionTorneo, cruce, mutar, elitismo, reparar } from './operators.js';
 import { cargarDatos, obtenerDias } from './data-loader.js';
 
@@ -21,7 +21,7 @@ export async function generarHorario(opciones = {}) {
   if (cursoId) console.log(`📚 Curso específico ID: ${cursoId}`);
 
   // 1. Cargar datos
-  const { cargas, aulas, disponibilidades, bloques, tipoEducacion, clasesOcupadas } = 
+    const { cargas, aulas, disponibilidades, bloques, tipoEducacion, seccion, clasesOcupadas } = 
     await cargarDatos(periodoId, jornadaId, cursoId);
 
   if (cargas.length === 0) {
@@ -101,8 +101,8 @@ export async function generarHorario(opciones = {}) {
       poblacion = nuevaPoblacion;
     }
 
-    // Reparación final: intercambios que eliminan los conflictos que quedan
-    if (mejorIntento.conflictos > 0) {
+        // Reparación final: intercambios que eliminan conflictos y, si se puede, los cruces RB-03
+    if (mejorIntento.fitness < 100) {
       reparar(mejorIntento, disponibilidades, clasesOcupadas);
       console.log(`🔧 Intento ${intento} tras reparación: Conflictos = ${mejorIntento.conflictos}`);
     }
@@ -115,6 +115,17 @@ export async function generarHorario(opciones = {}) {
 
   const completo = mejorGlobal.clases.length >= horasRequeridas;
 
+  // ✅ RB-03: cruces con la otra sección que quedaron (el colegio tuvo prioridad)
+  const nombreDocente = new Map(cargas.map(c => [c.id, c.docente ? `${c.docente.nombres} ${c.docente.apellidos}` : '']));
+  const nombreCurso = new Map(cargas.map(c => [c.id, c.curso ? `${c.curso.grado} "${c.curso.paralelo}"` : '']));
+  const avisos = detectarCrucesEntreSecciones(mejorGlobal.clases, clasesOcupadas, seccion).map(a => ({
+    ...a,
+    docente: nombreDocente.get(a.cargaHorariaId) || '',
+    curso: nombreCurso.get(a.cargaHorariaId) || '',
+    seccion,
+  }));
+  if (avisos.length) console.log(`⚠️ RB-03: ${avisos.length} cruce(s) con la otra sección`);
+
   return {
     exito: mejorGlobal.conflictos === 0 && completo,
     fitness: mejorGlobal.fitness,
@@ -124,6 +135,8 @@ export async function generarHorario(opciones = {}) {
     totalClases: mejorGlobal.clases.length,
     horasRequeridas,
     completo,
+    seccion,   // ✅ 'ESCUELA' | 'COLEGIO'
+    avisos,    // ✅ RB-03: cruces entre secciones
     clases: mejorGlobal.clases,
   };
 }

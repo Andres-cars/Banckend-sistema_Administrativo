@@ -23,12 +23,18 @@ export function calcularFitness(chromosome, disponibilidades = [], clasesOcupada
       }
     }
 
-    // 2. ✅ NUEVO: Cruce con OTROS cursos (Horarios ocupados)
+    // 2. Cruce con OTROS cursos (horarios ya guardados)
+    //    - Misma sección (RH-01): conflicto duro.
+    //    - ✅ RB-03: colegio sobre escuela → solo penalización blanda (aviso), el colegio tiene prioridad.
     for (const ocupada of clasesOcupadas) {
       if (a.docenteId === ocupada.docenteId && a.dia === ocupada.dia) {
         if (seSolapan(a.horaInicio, a.horaFin, ocupada.horaInicio, ocupada.horaFin)) {
-          penalizaciones += PENALIZACION_DURA;
-          conflictos++;
+          if (ocupada.cruceBlando) {
+            penalizaciones += PENALIZACION_BLANDA;
+          } else {
+            penalizaciones += PENALIZACION_DURA;
+            conflictos++;
+          }
         }
       }
     }
@@ -89,4 +95,37 @@ function horaAMinutos(hora) {
   if (!hora) return 0;
   const [h, m] = hora.split(':').map(Number);
   return h * 60 + m;
+}
+
+
+// ✅ RB-03: lista de cruces entre secciones (escuela / colegio) que quedaron en el horario
+export function detectarCrucesEntreSecciones(clases = [], clasesOcupadas = [], seccionActual = 'COLEGIO') {
+  const avisos = [];
+  const vistos = new Set();
+
+  for (const a of clases) {
+    for (const o of clasesOcupadas) {
+      if (o.seccion === seccionActual) continue; // solo entre secciones distintas
+      if (a.docenteId !== o.docenteId || a.dia !== o.dia) continue;
+      if (!seSolapan(a.horaInicio, a.horaFin, o.horaInicio, o.horaFin)) continue;
+
+      const clave = `${a.docenteId}|${a.dia}|${a.horaInicio}|${o.horaInicio}|${o.curso}`;
+      if (vistos.has(clave)) continue;
+      vistos.add(clave);
+
+      avisos.push({
+        docenteId: a.docenteId,
+        cargaHorariaId: a.cargaHorariaId,
+        dia: a.dia,
+        horaInicio: a.horaInicio,
+        horaFin: a.horaFin,
+        otraSeccion: o.seccion,
+        otroCurso: o.curso,
+        otroHorario: o.horario,
+        otraHoraInicio: o.horaInicio,
+        otraHoraFin: o.horaFin,
+      });
+    }
+  }
+  return avisos;
 }

@@ -7,6 +7,7 @@ import {
   update,
   deleteAsignatura,
   search,
+  cambiarEstado,
 } from '../controller/asignatura.controller.js';
 import { verifyToken } from '../middlewares/auth.middleware.js';
 import { isAdmin } from '../middlewares/role.middleware.js';
@@ -22,6 +23,7 @@ router.get('/search', isAdmin, search);
 router.get('/:id', isAdmin, getById);
 router.post('/', isAdmin, create);
 router.put('/:id', isAdmin, update);
+router.patch('/:id/estado', isAdmin, cambiarEstado); // ✅ NUEVO
 router.delete('/:id', isAdmin, deleteAsignatura);
 
 export default router;
