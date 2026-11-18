@@ -1,0 +1,10 @@
+# Dependencias (se instalan con npm install)
+node_modules/
+
+# Variables de entorno con claves
+.env
+
+# Archivos del sistema y logs
+.DS_Store
+Thumbs.db
+npm-debug.log*
