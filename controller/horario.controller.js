@@ -1,7 +1,8 @@
-// src/controllers/horario.controller.js
 import HorarioService from '../services/horario.service.js';
+import HistorialService from '../services/historial.service.js'; // ✅ RN-12
 
 const horarioService = new HorarioService();
+const historial = new HistorialService(); // ✅ RN-12
 
 // 🧬 Generar horario (sin guardar)
 export const generar = async (req, res) => {
@@ -37,6 +38,14 @@ export const guardar = async (req, res) => {
     }
 
     const resultado = await horarioService.guardar(periodoId, jornadaId, nombre, clases);
+    // ✅ RN-12: registrar en el historial
+    await historial.registrar({
+      usuarioId: req.user?.id,
+      tabla: 'horarios',
+      registroId: resultado.id,
+      accion: 'CREAR',
+      descripcion: `Guardó el ${resultado.nombre} como borrador (${resultado.totalClases} clases)`,
+    });
 
     return res.status(201).json({
       success: true,
@@ -89,6 +98,15 @@ export const deleteHorario = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await horarioService.delete(Number(id));
+    
+    // ✅ RN-12: registrar en el historial
+    await historial.registrar({
+      usuarioId: req.user?.id,
+      tabla: 'horarios',
+      registroId: Number(id),
+      accion: 'ELIMINAR',
+      descripcion: `Eliminó el ${result.nombre || '#' + id}${result.estabaPublicado ? ' (estaba publicado)' : ''}`,
+    });
     return res.json({
       success: true,
       ...result,
@@ -148,6 +166,18 @@ export const cambiarPublicacion = async (req, res) => {
     }
 
     const resultado = await horarioService.cambiarPublicacion(Number(id), publicado);
+    
+    // ✅ RN-12: registrar en el historial
+    await historial.registrar({
+      usuarioId: req.user?.id,
+      tabla: 'horarios',
+      registroId: resultado.id,
+      accion: publicado ? 'PUBLICAR' : 'RETIRAR',
+      descripcion: publicado
+        ? `Publicó  ${resultado.nombre}` +
+          (resultado.retirados?.length ? `; se retiró la versión anterior: ${resultado.retirados.join(', ')}` : '')
+        : `Retiró  ${resultado.nombre} (vuelve a borrador)`,
+    });
 
     return res.json({
       success: true,

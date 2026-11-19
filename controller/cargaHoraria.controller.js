@@ -1,7 +1,9 @@
 // src/controllers/cargaHoraria.controller.js
 import CargaHorariaService from '../services/cargaHoraria.service.js';
+import HistorialService from '../services/historial.service.js'; // ✅ RN-12
 
 const cargaService = new CargaHorariaService();
+const historial = new HistorialService(); // ✅ RN-12
 
 // 📋 Listar cargas horarias
 export const getAll = async (req, res) => {
@@ -57,6 +59,16 @@ export const create = async (req, res) => {
       horas_semanales,
     });
 
+    // ✅ RN-12: registrar en el historial
+    const nueva = await cargaService.getById(carga.id);
+    await historial.registrar({
+      usuarioId: req.user?.id,
+      tabla: 'cargas_horarias',
+      registroId: carga.id,
+      accion: 'CREAR',
+      descripcion: `Creó la carga: ${historial.describirCarga(nueva)}`,
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Carga horaria creada correctamente',
@@ -74,9 +86,22 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = req.body;
+      const data = req.body;
+
+    // ✅ RN-12: guardar cómo estaba antes de cambiarla
+    const antes = (await cargaService.getById(Number(id))).toJSON();
 
     const carga = await cargaService.update(Number(id), data);
+
+    // ✅ RN-12: registrar en el historial qué cambió
+    const despues = await cargaService.getById(Number(id));
+    await historial.registrar({
+      usuarioId: req.user?.id,
+      tabla: 'cargas_horarias',
+      registroId: Number(id),
+      accion: 'EDITAR',
+      descripcion: `Editó la carga ${historial.describirCarga(antes)}: ${historial.cambiosCarga(antes, despues)}`,
+    });
 
     return res.json({
       success: true,
@@ -94,8 +119,20 @@ export const update = async (req, res) => {
 // 🗑️ Eliminar carga horaria
 export const deleteCarga = async (req, res) => {
   try {
-    const { id } = req.params;
+        const { id } = req.params;
+
+    // ✅ RN-12: datos de la carga antes de eliminarla
+    const carga = await cargaService.getById(Number(id));
+
     const result = await cargaService.delete(Number(id));
+
+    await historial.registrar({
+      usuarioId: req.user?.id,
+      tabla: 'cargas_horarias',
+      registroId: Number(id),
+      accion: 'ELIMINAR',
+      descripcion: `Eliminó la carga: ${historial.describirCarga(carga)}`,
+    });
     return res.json({
       success: true,
       ...result,

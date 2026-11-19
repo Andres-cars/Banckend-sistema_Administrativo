@@ -283,8 +283,13 @@ class HorarioService {
     if (!horario) {
       throw new Error('Horario no encontrado');
     }
-    await horario.update({ estado: false });
-    return { message: 'Horario eliminado correctamente' };
+        const estabaPublicado = !!horario.publicado;
+    await horario.update({ estado: false, publicado: false });
+    return {
+      message: 'Horario eliminado correctamente',
+      nombre: horario.nombre,      // ✅ RN-12: para el historial
+      estabaPublicado,
+    };
   }
 }
 
