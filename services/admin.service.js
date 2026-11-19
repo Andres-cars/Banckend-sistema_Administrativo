@@ -42,8 +42,8 @@ class AdminService {
       throw new Error('Usuario y contraseña son obligatorios');
     }
 
-    if (password.length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres');
+    if (password.length < 8) {
+      throw new Error('La contraseña debe tener al menos 8 caracteres');
     }
 
     // Verificar que el usuario no exista
@@ -79,8 +79,8 @@ class AdminService {
 
     // Solo permitir cambiar la contraseña
     if (data.password && data.password.trim() !== '') {
-      if (data.password.length < 6) {
-        throw new Error('La contraseña debe tener al menos 6 caracteres');
+      if (data.password.length < 8) {
+        throw new Error('La contraseña debe tener al menos 8 caracteres');
       }
       await admin.update({ password: data.password });
     }

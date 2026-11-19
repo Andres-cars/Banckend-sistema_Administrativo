@@ -255,7 +255,7 @@ class HorarioService {
 
           if (idsOtros.length) {
             await Horario.update(
-              { publicado: false, fecha_publicacion: null },
+              { publicado: false },
               { where: { id: idsOtros }, transaction: transaccion }
             );
             retirados = [...new Map(otros.filter(o => idsOtros.includes(o.horario_id))
@@ -265,7 +265,7 @@ class HorarioService {
       }
 
       await horario.update(
-        { publicado, fecha_publicacion: publicado ? new Date() : null },
+        publicado ? { publicado: true, fecha_publicacion: new Date() } : { publicado: false },
         { transaction: transaccion }
       );
 

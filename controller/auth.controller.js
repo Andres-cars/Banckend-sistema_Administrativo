@@ -69,6 +69,22 @@ export const logout = async (req, res) => {
 export const cambiarPassword = async (req, res) => {
   try {
     const { passwordActual, passwordNueva } = req.body;
+
+    if (!passwordActual || !passwordNueva) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña actual y la nueva son obligatorias',
+      });
+    }
+
+    // La nueva contraseña debe tener al menos 8 caracteres
+    if (passwordNueva.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 8 caracteres',
+      });
+    }
+
     await authService.cambiarPassword(req.user.id, passwordActual, passwordNueva);
 
     return res.json({

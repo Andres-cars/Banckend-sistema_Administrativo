@@ -80,7 +80,7 @@ class DocenteService {
     // 2. Desactivar al docente y liberar su cédula
     await docente.update({ 
       estado: false,
-      identificacion: docente.identificacion ? `${docente.identificacion}_DEL_${Date.now()}` : null
+            identificacion: docente.identificacion ? `${docente.identificacion}_${Date.now().toString(36)}` : null  
     });
     
     return { message: 'Docente y usuario desactivados correctamente' };
@@ -88,8 +88,8 @@ class DocenteService {
 
     // 🔑 Restablecer (o asignar) la contraseña de un docente — solo ADMIN
   async resetPassword(id, { password, usuario }) {
-    if (!password || password.length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres');
+    if (!password || password.length < 8) {
+      throw new Error('La contraseña debe tener al menos 8 caracteres');
     }
 
     const docente = await this.getById(id);

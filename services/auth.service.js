@@ -66,8 +66,8 @@ class AuthService {
     if (!passwordActual || !passwordNueva) {
       throw new Error('Debes escribir tu contraseña actual y la nueva');
     }
-    if (passwordNueva.length < 6) {
-      throw new Error('La nueva contraseña debe tener al menos 6 caracteres');
+    if (passwordNueva.length < 8) {
+      throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
     }
     if (passwordActual === passwordNueva) {
       throw new Error('La nueva contraseña debe ser diferente a la actual');

@@ -57,6 +57,14 @@ export const create = async (req, res) => {
       });
     }
 
+    // La contraseña debe tener al menos 8 caracteres
+    if (password && password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 8 caracteres',
+      });
+    }
+
     const docente = await docenteService.create({
       nombres,
       apellidos,
@@ -149,6 +157,14 @@ export const resetPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { password, usuario } = req.body;
+
+    // La nueva contraseña debe tener al menos 8 caracteres
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 8 caracteres',
+      });
+    }
 
     const result = await docenteService.resetPassword(Number(id), { password, usuario });
 

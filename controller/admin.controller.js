@@ -45,6 +45,14 @@ export const create = async (req, res) => {
       });
     }
 
+    // La contraseña debe tener al menos 8 caracteres
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 8 caracteres',
+      });
+    }
+
     const admin = await adminService.create({ usuario, password });
 
     return res.status(201).json({
@@ -63,6 +71,16 @@ export const create = async (req, res) => {
 // ✏️ Actualizar administrador
 export const update = async (req, res) => {
   try {
+    const { password } = req.body;
+
+    // Si se envía una nueva contraseña, debe tener al menos 8 caracteres
+    if (password && password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'La contraseña debe tener al menos 8 caracteres',
+      });
+    }
+
     const admin = await adminService.update(Number(req.params.id), req.body);
     return res.json({
       success: true,
