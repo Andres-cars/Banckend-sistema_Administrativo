@@ -8,3 +8,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 npm-debug.log*
+
+# Scripts de prueba con contraseñas
+scripts/
