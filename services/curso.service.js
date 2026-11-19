@@ -100,7 +100,7 @@ class CursoService {
     const curso = await this.getById(id);
     await curso.update({ 
       estado: false,
-      paralelo: `${curso.paralelo}_DEL_${Date.now()}`
+           paralelo: `${curso.paralelo}_${Date.now().toString(36)}`.slice(0, 10)
     });
     return { message: 'Curso desactivado correctamente' };
   }
