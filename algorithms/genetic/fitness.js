@@ -1,6 +1,7 @@
 // algorithms/genetic/fitness.js
 const PENALIZACION_DURA = 100;
 const PENALIZACION_BLANDA = 10;
+const MAX_PAUSA = 30; // minutos: el receso (20 o 30 min) no rompe la continuidad
 
 export function calcularFitness(chromosome, disponibilidades = [], clasesOcupadas = []) {
   let penalizaciones = 0;
@@ -53,15 +54,21 @@ export function calcularFitness(chromosome, disponibilidades = [], clasesOcupada
     }
   }
 
-  // 4. Distribución (Blanda)
-  const clasesPorCursoDia = {};
+  // 4. Restricciones deseables RB-01 y RB-02 (blandas), por curso, día y asignatura
+  const grupos = {};
   for (const clase of clases) {
-    const key = `${clase.cursoId}-${clase.dia}`;
-    clasesPorCursoDia[key] = (clasesPorCursoDia[key] || 0) + 1;
+    const key = `${clase.cursoId}-${clase.dia}-${clase.asignaturaId}`;
+    (grupos[key] = grupos[key] || []).push(clase);
   }
-  for (const key in clasesPorCursoDia) {
-    if (clasesPorCursoDia[key] > 7) { // Máximo 7 clases al día
-      penalizaciones += PENALIZACION_BLANDA;
+  for (const key in grupos) {
+    const g = grupos[key];
+    if (g.length < 2) continue;
+    // RB-02: máximo 2 horas de la misma asignatura en un día
+    if (g.length > 2) penalizaciones += PENALIZACION_BLANDA * (g.length - 2);
+    // RB-01: las horas del mismo día van seguidas (se admite el receso entre ellas)
+    const orden = g.map(c => [horaAMinutos(c.horaInicio), horaAMinutos(c.horaFin)]).sort((x, y) => x[0] - y[0]);
+    for (let k = 1; k < orden.length; k++) {
+      if (orden[k][0] - orden[k - 1][1] > MAX_PAUSA) penalizaciones += PENALIZACION_BLANDA;
     }
   }
 

@@ -66,6 +66,7 @@ export async function generarHorario(opciones = {}) {
     }
 
     let mejorIntento = null;
+    let mejorFitnessVisto = -1, sinMejora = 0;
     for (generacionActual = 0; generacionActual < generaciones; generacionActual++) {
       poblacion.sort((a, b) => b.fitness - a.fitness);
 
@@ -78,8 +79,11 @@ export async function generarHorario(opciones = {}) {
         console.log(`Intento ${intento} · Gen ${generacionActual}: Fitness = ${mejorActual.fitness.toFixed(2)}% | Conflictos = ${mejorActual.conflictos}`);
       }
 
-      // Se detiene al encontrar un horario sin conflictos duros (o con el fitness mínimo pedido)
-      if (mejorActual.conflictos === 0 || mejorActual.fitness >= fitnessMinimo) break;
+      // Se detiene con el horario perfecto, o si ya no tiene conflictos duros y lleva
+      // 100 generaciones sin mejorar las restricciones deseables
+      if (mejorActual.fitness >= 100) break;
+      if (mejorActual.fitness > mejorFitnessVisto) { mejorFitnessVisto = mejorActual.fitness; sinMejora = 0; } else sinMejora++;
+      if (mejorActual.conflictos === 0 && sinMejora >= 100) break;
 
       const nuevaPoblacion = elitismo(poblacion, 2);
 

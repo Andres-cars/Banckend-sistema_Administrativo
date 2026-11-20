@@ -25,6 +25,12 @@ Horario.init(
       type: DataTypes.STRING(150),
       allowNull: false,
     },
+    // ✅ A2.5 / HU-14: escenario del horario (por ahora todos 'General')
+    escenario: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+      defaultValue: 'General',
+    },
     generado_automaticamente: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
