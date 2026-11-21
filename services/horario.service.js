@@ -135,7 +135,7 @@ class HorarioService {
   }
 
   // 👨‍🏫 CLASES DE UN DOCENTE (lo usan el docente y el administrador)
-  async getClasesDocente(docenteOId) {
+  async getClasesDocente(docenteOId, periodoId = null) {
     const docente = typeof docenteOId === 'object'
       ? docenteOId
       : await Docente.findByPk(docenteOId, { attributes: ['id', 'nombres', 'apellidos', 'especialidad'] });
@@ -144,9 +144,15 @@ class HorarioService {
       throw new Error('Docente no encontrado');
     }
 
-    // 2. Su carga horaria
+    // 1b. ✅ Periodo: el indicado o, si no, el actual (el activo más reciente)
+    const periodo = periodoId
+      ? await PeriodoAcademico.findByPk(periodoId)
+      : await PeriodoAcademico.findOne({ where: { estado: true }, order: [['fecha_inicio', 'DESC']] });
+    const filtroPeriodo = periodo ? { periodo_id: periodo.id } : {};
+
+    // 2. Su carga horaria (solo del periodo)
     const cargas = await CargaHoraria.findAll({
-      where: { docente_id: docente.id, estado: true },
+      where: { docente_id: docente.id, estado: true, ...filtroPeriodo },
       include: [
         { model: Asignatura, as: 'asignatura', attributes: ['id', 'nombre', 'codigo'] },
         { model: Curso, as: 'curso', attributes: ['id', 'nivel', 'grado', 'paralelo'] },
@@ -162,7 +168,7 @@ class HorarioService {
       const detalles = await DetalleHorario.findAll({
         where: { carga_horaria_id: [...cargaPorId.keys()] },
         include: [
-          { model: Horario, as: 'horario', where: { estado: true, publicado: true }, attributes: ['id', 'nombre'] },
+          { model: Horario, as: 'horario', where: { estado: true, publicado: true, ...filtroPeriodo }, attributes: ['id', 'nombre'] },
           { model: Aula, as: 'aula', attributes: ['id', 'nombre'] },
         ],
         order: [['horario_id', 'DESC']],
@@ -200,6 +206,7 @@ class HorarioService {
 
     // 5. Respuesta
     return {
+      periodo: periodo ? { id: periodo.id, nombre: periodo.nombre } : null, // ✅ periodo mostrado
       docente: {
         id: docente.id,
         nombres: docente.nombres,
@@ -283,7 +290,7 @@ class HorarioService {
     if (!horario) {
       throw new Error('Horario no encontrado');
     }
-        const estabaPublicado = !!horario.publicado;
+    const estabaPublicado = !!horario.publicado;
     await horario.update({ estado: false, publicado: false });
     return {
       message: 'Horario eliminado correctamente',

@@ -15,7 +15,7 @@ import cargaHorariaRoutes from './router/cargaHoraria.routes.js';
 import horarioRoutes from './router/horario.routes.js';
 import adminRoutes from './router/admin.routes.js';
 import historialRoutes from './router/historial.routes.js';
-
+import periodoRoutes from './router/periodo.routes.js';
 // Cargar variables de entorno
 dotenv.config();
 
@@ -85,6 +85,7 @@ app.use('/api/cargas-horarias', cargaHorariaRoutes);
 app.use('/api/horarios', horarioRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/historial', historialRoutes);
+app.use('/api/periodos', periodoRoutes);
 // ============================================
 // MANEJO DE ERRORES GLOBAL
 // ============================================
