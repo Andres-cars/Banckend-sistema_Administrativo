@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   generar,
   guardar,
+  validar,
   getAll,
   getById,
   deleteHorario,
@@ -23,6 +24,7 @@ router.get('/mis-clases', isDocente, misClases);
 // Rutas para administradores
 router.post('/generar', isAdmin, generar);
 router.post('/guardar', isAdmin, guardar);
+router.post('/validar', isAdmin, validar); // ✅ HU-12
 router.get('/', isAdmin, getAll);
 router.get('/docente/:docenteId', isAdmin, clasesDocente); // ✅ (antes de '/:id')
 router.get('/:id', isAdmin, getById);

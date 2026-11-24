@@ -26,36 +26,49 @@ export const generar = async (req, res) => {
 };
 
 // 💾 Guardar horario
+// ✅ HU-12: validar un horario ajustado a mano (no guarda)
+export const validar = async (req, res) => {
+  try {
+    const { periodoId, cursoId, clases } = req.body;
+    if (!cursoId || !Array.isArray(clases)) {
+      return res.status(400).json({ success: false, message: 'Curso y clases son obligatorios' });
+    }
+    const data = await horarioService.validar(periodoId, cursoId, clases);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error al validar horario:', error.message);
+    return res.status(500).json({ success: false, message: error.message || 'Error al validar el horario' });
+  }
+};
+
+// 💾 Guardar horario (✅ HU-12: valida antes de guardar y registra los ajustes manuales)
 export const guardar = async (req, res) => {
   try {
-    const { periodoId, jornadaId, nombre, clases } = req.body;
+    const { periodoId, jornadaId, nombre, clases, cursoId = null, ajustesManuales = 0 } = req.body;
 
     if (!nombre || !clases || !Array.isArray(clases)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nombre y clases son obligatorios',
-      });
+      return res.status(400).json({ success: false, message: 'Nombre y clases son obligatorios' });
     }
 
-    const resultado = await horarioService.guardar(periodoId, jornadaId, nombre, clases);
-    // ✅ RN-12: registrar en el historial
+    const resultado = await horarioService.guardar(periodoId, jornadaId, nombre, clases, cursoId);
+
+    // ✅ RN-12: registrar en el historial, indicando los ajustes manuales (HU-12)
+    const ajustes = Number(ajustesManuales) || 0;
     await historial.registrar({
       usuarioId: req.user?.id,
       tabla: 'horarios',
       registroId: resultado.id,
       accion: 'CREAR',
-      descripcion: `Guardó el ${resultado.nombre} como borrador (${resultado.totalClases} clases)`,
+      descripcion: `Guardó el ${resultado.nombre} como borrador (${resultado.totalClases} clases` +
+        (ajustes ? `, ${ajustes} ${ajustes === 1 ? 'ajuste manual' : 'ajustes manuales'})` : ')'),
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Horario guardado correctamente',
-      data: resultado,
-    });
+    return res.status(201).json({ success: true, message: 'Horario guardado correctamente', data: resultado });
   } catch (error) {
-    return res.status(400).json({
+    return res.status(error.status || 400).json({
       success: false,
       message: error.message || 'Error al guardar horario',
+      detalle: error.detalle,   // ✅ HU-12: cruces que impidieron guardar
     });
   }
 };

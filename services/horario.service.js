@@ -1,5 +1,6 @@
 // services/horario.service.js
 import { generarHorario } from '../algorithms/genetic/genetic-algorithm.js';
+import { validarHorario } from '../algorithms/genetic/validador.js'; // ✅ HU-12
 import Horario from '../models/horario.model.js';
 import DetalleHorario from '../models/detalleHorario.model.js';
 import CargaHoraria from '../models/cargaHoraria.model.js';
@@ -37,9 +38,30 @@ class HorarioService {
   }
 
   // 💾 Guardar horario en la base de datos
-  async guardar(periodoId, jornadaId, nombre, clases) {
-    const transaccion = await sequelize.transaction();
+    // ✅ HU-12: validar un horario ajustado a mano (no guarda nada)
+  async validar(periodoId, cursoId, clases) {
+    const r = await validarHorario({ periodoId, cursoId, clases });
+    const { clases: _omitidas, ...resumen } = r;   // al navegador solo le interesa el resultado
+    return resumen;
+  }
 
+  // 💾 Guardar horario (✅ HU-12: valida SIEMPRE en el servidor antes de guardar)
+  async guardar(periodoId, jornadaId, nombre, clases, cursoId = null) {
+    // Si el navegador no envía el curso, se obtiene de la primera clase
+    if (!cursoId && clases.length) {
+      const carga = await CargaHoraria.findByPk(clases[0].cargaHorariaId);
+      cursoId = carga?.curso_id;
+    }
+
+    const validacion = await validarHorario({ periodoId, cursoId, clases });
+    if (!validacion.valido) {
+      const error = new Error(`No se puede guardar: el horario tiene ${validacion.conflictos} cruce(s) o error(es).`);
+      error.status = 409;
+      error.detalle = { cruces: validacion.cruces, errores: validacion.errores };
+      throw error;
+    }
+
+    const transaccion = await sequelize.transaction();
     try {
       const horario = await Horario.create({
         periodo_id: periodoId,
@@ -49,7 +71,8 @@ class HorarioService {
         estado: true,
       }, { transaction: transaccion });
 
-      const detalles = clases.map(c => ({
+      // Se guardan las clases reconstruidas desde las cargas (no las que envió el navegador)
+      const detalles = validacion.clases.map(c => ({
         horario_id: horario.id,
         carga_horaria_id: c.cargaHorariaId,
         aula_id: c.aulaId,
@@ -59,14 +82,9 @@ class HorarioService {
       }));
 
       await DetalleHorario.bulkCreate(detalles, { transaction: transaccion });
-
       await transaccion.commit();
 
-      return {
-        id: horario.id,
-        nombre: horario.nombre,
-        totalClases: detalles.length,
-      };
+      return { id: horario.id, nombre: horario.nombre, totalClases: detalles.length };
     } catch (error) {
       await transaccion.rollback();
       throw error;

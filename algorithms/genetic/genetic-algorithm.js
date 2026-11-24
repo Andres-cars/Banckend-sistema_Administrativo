@@ -122,6 +122,7 @@ export async function generarHorario(opciones = {}) {
   // ✅ RB-03: cruces con la otra sección que quedaron (el colegio tuvo prioridad)
   const nombreDocente = new Map(cargas.map(c => [c.id, c.docente ? `${c.docente.nombres} ${c.docente.apellidos}` : '']));
   const nombreCurso = new Map(cargas.map(c => [c.id, c.curso ? `${c.curso.grado} "${c.curso.paralelo}"` : '']));
+    const nombreAsignatura = new Map(cargas.map(c => [c.id, c.asignatura?.nombre || ''])); // ✅ HU-12
   const avisos = detectarCrucesEntreSecciones(mejorGlobal.clases, clasesOcupadas, seccion).map(a => ({
     ...a,
     docente: nombreDocente.get(a.cargaHorariaId) || '',
@@ -139,9 +140,14 @@ export async function generarHorario(opciones = {}) {
     totalClases: mejorGlobal.clases.length,
     horasRequeridas,
     completo,
-    seccion,   // ✅ 'ESCUELA' | 'COLEGIO'
-    avisos,    // ✅ RB-03: cruces entre secciones
-    clases: mejorGlobal.clases,
+    seccion,   
+    avisos,    
+       bloques,   // ✅ HU-12: filas de la tabla de ajuste manual
+    clases: mejorGlobal.clases.map(c => ({
+      ...c,
+      asignatura: nombreAsignatura.get(c.cargaHorariaId) || '',   // ✅ HU-12: para mostrar en la tabla
+      docente: nombreDocente.get(c.cargaHorariaId) || '',
+    })),
   };
 }
 
