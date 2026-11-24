@@ -15,4 +15,11 @@ export const DB_PASSWORD = process.env.DB_PASSWORD || '';
 export const TOKEN_KEY = process.env.TOKEN_KEY || 'secret';
 export const JWT_EXPIRES = process.env.JWT_EXPIRES || '8h';
 
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+// ✅ Chatbot híbrido (OpenAI)
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || '';
+export const CHATBOT_TIMEOUT_MS = Number(process.env.CHATBOT_TIMEOUT_MS || 15000);
+export const OPENAI_TEMPERATURE = process.env.OPENAI_TEMPERATURE !== undefined && process.env.OPENAI_TEMPERATURE !== ''
+  ? Number(process.env.OPENAI_TEMPERATURE) : null;
+
+  export const OPENAI_REASONING_EFFORT = process.env.OPENAI_REASONING_EFFORT || '';
